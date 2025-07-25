@@ -99,6 +99,11 @@ async def aistudio_list_models(_ = Depends(custom_verify_password),
         filtered_models = [model for model in GeminiClient.AVAILABLE_MODELS if model in settings.WHITELIST_MODELS]
     else:
         filtered_models = [model for model in GeminiClient.AVAILABLE_MODELS if model not in settings.BLOCKED_MODELS]
+        
+    if "gemini-2.5-pro" in filtered_models:
+        filtered_models.append("gemini-2.5-pro-max")
+        filtered_models.append("gemini-2.5-pro-nothinking")
+        
     return ModelList(data=[{"id": model, "object": "model", "created": 1678888888, "owned_by": "organization-owner"} for model in filtered_models])
 
 @router.get("/vertex/models",response_model=ModelList)
@@ -130,6 +135,13 @@ async def aistudio_chat_completions(
         is_gemini = True
     else:
         is_gemini = False
+
+    if request.model == "gemini-2.5-pro-max":
+        request.model = "gemini-2.5-pro"
+        request.thinking_budget = 32768
+    elif request.model == "gemini-2.5-pro-nothinking":
+        request.model = "gemini-2.5-pro"
+        request.thinking_budget = 128
     
     # 生成缓存键 - 用于匹配请求内容对应缓存
     if settings.PRECISE_CACHE:
